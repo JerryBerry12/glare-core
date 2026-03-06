@@ -166,42 +166,42 @@ vec4 sampleTexHighQual(in sampler2D tex, float u, float v)
 	int vt_minus_1 = max(i_pixels_clamped_y - 1, 0);
 
 
-	const vec4  v0 = texelFetch(tex, ivec2(ut_minus_1, vt_minus_1), /*lod=*/0);
-	const vec4  v1 = texelFetch(tex, ivec2(ut,         vt_minus_1), /*lod=*/0);
-	const vec4  v2 = texelFetch(tex, ivec2(ut_1,       vt_minus_1), /*lod=*/0);
-	const vec4  v3 = texelFetch(tex, ivec2(ut_2,       vt_minus_1), /*lod=*/0);
-	const vec4  v4 = texelFetch(tex, ivec2(ut_minus_1, vt        ), /*lod=*/0);
-	const vec4  v5 = texelFetch(tex, ivec2(ut,         vt        ), /*lod=*/0);
-	const vec4  v6 = texelFetch(tex, ivec2(ut_1,       vt        ), /*lod=*/0);
-	const vec4  v7 = texelFetch(tex, ivec2(ut_2,       vt        ), /*lod=*/0);
-	const vec4  v8 = texelFetch(tex, ivec2(ut_minus_1, vt_1      ), /*lod=*/0);
-	const vec4  v9 = texelFetch(tex, ivec2(ut,         vt_1      ), /*lod=*/0);
-	const vec4 v10 = texelFetch(tex, ivec2(ut_1,       vt_1      ), /*lod=*/0);
-	const vec4 v11 = texelFetch(tex, ivec2(ut_2,       vt_1      ), /*lod=*/0);
-	const vec4 v12 = texelFetch(tex, ivec2(ut_minus_1, vt_2      ), /*lod=*/0);
-	const vec4 v13 = texelFetch(tex, ivec2(ut,         vt_2      ), /*lod=*/0);
-	const vec4 v14 = texelFetch(tex, ivec2(ut_1,       vt_2      ), /*lod=*/0);
-	const vec4 v15 = texelFetch(tex, ivec2(ut_2,       vt_2      ), /*lod=*/0);
+	vec4  v0 = texelFetch(tex, ivec2(ut_minus_1, vt_minus_1), /*lod=*/0);
+	vec4  v1 = texelFetch(tex, ivec2(ut,         vt_minus_1), /*lod=*/0);
+	vec4  v2 = texelFetch(tex, ivec2(ut_1,       vt_minus_1), /*lod=*/0);
+	vec4  v3 = texelFetch(tex, ivec2(ut_2,       vt_minus_1), /*lod=*/0);
+	vec4  v4 = texelFetch(tex, ivec2(ut_minus_1, vt        ), /*lod=*/0);
+	vec4  v5 = texelFetch(tex, ivec2(ut,         vt        ), /*lod=*/0);
+	vec4  v6 = texelFetch(tex, ivec2(ut_1,       vt        ), /*lod=*/0);
+	vec4  v7 = texelFetch(tex, ivec2(ut_2,       vt        ), /*lod=*/0);
+	vec4  v8 = texelFetch(tex, ivec2(ut_minus_1, vt_1      ), /*lod=*/0);
+	vec4  v9 = texelFetch(tex, ivec2(ut,         vt_1      ), /*lod=*/0);
+	vec4 v10 = texelFetch(tex, ivec2(ut_1,       vt_1      ), /*lod=*/0);
+	vec4 v11 = texelFetch(tex, ivec2(ut_2,       vt_1      ), /*lod=*/0);
+	vec4 v12 = texelFetch(tex, ivec2(ut_minus_1, vt_2      ), /*lod=*/0);
+	vec4 v13 = texelFetch(tex, ivec2(ut,         vt_2      ), /*lod=*/0);
+	vec4 v14 = texelFetch(tex, ivec2(ut_1,       vt_2      ), /*lod=*/0);
+	vec4 v15 = texelFetch(tex, ivec2(ut_2,       vt_2      ), /*lod=*/0);
 
 	float left_pixel_x = floor(f_pixels_x - 0.5) + 0.5;
 	float bot_pixel_y  = floor(f_pixels_y - 0.5) + 0.5;
 
-	const float w0  = mitchellNetravaliEval(sqrt(square(f_pixels_x - (left_pixel_x - 1)) + square(f_pixels_y - (bot_pixel_y - 1))));
-	const float w1  = mitchellNetravaliEval(sqrt(square(f_pixels_x - (left_pixel_x - 0)) + square(f_pixels_y - (bot_pixel_y - 1))));
-	const float w2  = mitchellNetravaliEval(sqrt(square(f_pixels_x - (left_pixel_x + 1)) + square(f_pixels_y - (bot_pixel_y - 1))));
-	const float w3  = mitchellNetravaliEval(sqrt(square(f_pixels_x - (left_pixel_x + 2)) + square(f_pixels_y - (bot_pixel_y - 1))));
-	const float w4  = mitchellNetravaliEval(sqrt(square(f_pixels_x - (left_pixel_x - 1)) + square(f_pixels_y - (bot_pixel_y + 0))));
-	const float w5  = mitchellNetravaliEval(sqrt(square(f_pixels_x - (left_pixel_x - 0)) + square(f_pixels_y - (bot_pixel_y + 0))));
-	const float w6  = mitchellNetravaliEval(sqrt(square(f_pixels_x - (left_pixel_x + 1)) + square(f_pixels_y - (bot_pixel_y + 0))));
-	const float w7  = mitchellNetravaliEval(sqrt(square(f_pixels_x - (left_pixel_x + 2)) + square(f_pixels_y - (bot_pixel_y + 0))));
-	const float w8  = mitchellNetravaliEval(sqrt(square(f_pixels_x - (left_pixel_x - 1)) + square(f_pixels_y - (bot_pixel_y + 1))));
-	const float w9  = mitchellNetravaliEval(sqrt(square(f_pixels_x - (left_pixel_x - 0)) + square(f_pixels_y - (bot_pixel_y + 1))));
-	const float w10 = mitchellNetravaliEval(sqrt(square(f_pixels_x - (left_pixel_x + 1)) + square(f_pixels_y - (bot_pixel_y + 1))));
-	const float w11 = mitchellNetravaliEval(sqrt(square(f_pixels_x - (left_pixel_x + 2)) + square(f_pixels_y - (bot_pixel_y + 1))));
-	const float w12 = mitchellNetravaliEval(sqrt(square(f_pixels_x - (left_pixel_x - 1)) + square(f_pixels_y - (bot_pixel_y + 2))));
-	const float w13 = mitchellNetravaliEval(sqrt(square(f_pixels_x - (left_pixel_x - 0)) + square(f_pixels_y - (bot_pixel_y + 2))));
-	const float w14 = mitchellNetravaliEval(sqrt(square(f_pixels_x - (left_pixel_x + 1)) + square(f_pixels_y - (bot_pixel_y + 2))));
-	const float w15 = mitchellNetravaliEval(sqrt(square(f_pixels_x - (left_pixel_x + 2)) + square(f_pixels_y - (bot_pixel_y + 2))));
+	float w0  = mitchellNetravaliEval(sqrt(square(f_pixels_x - (left_pixel_x - 1)) + square(f_pixels_y - (bot_pixel_y - 1))));
+	float w1  = mitchellNetravaliEval(sqrt(square(f_pixels_x - (left_pixel_x - 0)) + square(f_pixels_y - (bot_pixel_y - 1))));
+	float w2  = mitchellNetravaliEval(sqrt(square(f_pixels_x - (left_pixel_x + 1)) + square(f_pixels_y - (bot_pixel_y - 1))));
+	float w3  = mitchellNetravaliEval(sqrt(square(f_pixels_x - (left_pixel_x + 2)) + square(f_pixels_y - (bot_pixel_y - 1))));
+	float w4  = mitchellNetravaliEval(sqrt(square(f_pixels_x - (left_pixel_x - 1)) + square(f_pixels_y - (bot_pixel_y + 0))));
+	float w5  = mitchellNetravaliEval(sqrt(square(f_pixels_x - (left_pixel_x - 0)) + square(f_pixels_y - (bot_pixel_y + 0))));
+	float w6  = mitchellNetravaliEval(sqrt(square(f_pixels_x - (left_pixel_x + 1)) + square(f_pixels_y - (bot_pixel_y + 0))));
+	float w7  = mitchellNetravaliEval(sqrt(square(f_pixels_x - (left_pixel_x + 2)) + square(f_pixels_y - (bot_pixel_y + 0))));
+	float w8  = mitchellNetravaliEval(sqrt(square(f_pixels_x - (left_pixel_x - 1)) + square(f_pixels_y - (bot_pixel_y + 1))));
+	float w9  = mitchellNetravaliEval(sqrt(square(f_pixels_x - (left_pixel_x - 0)) + square(f_pixels_y - (bot_pixel_y + 1))));
+	float w10 = mitchellNetravaliEval(sqrt(square(f_pixels_x - (left_pixel_x + 1)) + square(f_pixels_y - (bot_pixel_y + 1))));
+	float w11 = mitchellNetravaliEval(sqrt(square(f_pixels_x - (left_pixel_x + 2)) + square(f_pixels_y - (bot_pixel_y + 1))));
+	float w12 = mitchellNetravaliEval(sqrt(square(f_pixels_x - (left_pixel_x - 1)) + square(f_pixels_y - (bot_pixel_y + 2))));
+	float w13 = mitchellNetravaliEval(sqrt(square(f_pixels_x - (left_pixel_x - 0)) + square(f_pixels_y - (bot_pixel_y + 2))));
+	float w14 = mitchellNetravaliEval(sqrt(square(f_pixels_x - (left_pixel_x + 1)) + square(f_pixels_y - (bot_pixel_y + 2))));
+	float w15 = mitchellNetravaliEval(sqrt(square(f_pixels_x - (left_pixel_x + 2)) + square(f_pixels_y - (bot_pixel_y + 2))));
 
 	float filter_sum = 
 		w0 	+
@@ -224,7 +224,7 @@ vec4 sampleTexHighQual(in sampler2D tex, float u, float v)
 		w14	+
 		w15;
 
-	const vec4 sum = 
+	vec4 sum = 
 		(((v0  * w0 +
 		   v1  * w1) +
 		  (v2  * w2 +
@@ -332,3 +332,4 @@ void main()
 	colour_out = vec4(toneMapToNonLinear(col_rgb), alpha);
 	//colour_out = vec4(toNonLinear(3.0 * col.xyz), alpha); // linear tonemapping
 }
+

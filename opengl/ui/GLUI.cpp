@@ -62,6 +62,12 @@ void GLUI::destroy()
 	{
 		conPrint("WARNING: " + toString(widgets.size()) + " widgets still in GLUI upon destruction.");
 	//	assert(0);
+		for(auto it = widgets.begin(); it != widgets.end(); ++it)
+		{
+			GLUIWidget* widget = it->ptr();
+			widget->setGLUI(nullptr); // Set on unremoved widgets when gl_ui is about to be destroyed, so that glui is not a dangling pointer to gl_ui.
+		}
+
 		widgets.clear();
 	}
 
@@ -125,7 +131,7 @@ float GLUI::OpenGLYScaleForUIYScale(float y_scale)
 // Sorts objects into ascending z order
 struct GLUIWidgetZComparator
 {
-	inline bool operator() (const GLUIWidget* a, const GLUIWidget* b) const
+	inline bool operator() (const GLUIWidgetRef& a, const GLUIWidgetRef b) const
 	{
 		return a->m_z < b->m_z;
 	}
@@ -133,7 +139,9 @@ struct GLUIWidgetZComparator
 
 
 // Get list of widgets whose rectangle contains ui_coords, sorted into ascending widget z order (e.g. near to far)
-static void getSortedWidgetsAtEventPos(const std::set<GLUIWidgetRef>& widgets, const Vec2f ui_coords, std::vector<GLUIWidget*>& temp_widgets_out)
+// Use GLUIWidgetRef instead of raw pointers, because some widgets may be removed in event handlers (and have no other references), and therefore we may get dangling references to them
+// if not using references.
+static void getSortedWidgetsAtEventPos(const std::set<GLUIWidgetRef>& widgets, const Vec2f ui_coords, std::vector<GLUIWidgetRef>& temp_widgets_out)
 {
 	temp_widgets_out.clear();
 	for(auto it = widgets.begin(); it != widgets.end(); ++it)
@@ -164,6 +172,7 @@ void GLUI::handleMousePress(MouseEvent& event)
 			return;
 		}
 	}
+	temp_widgets.clear();
 
 	// No widget accepted the click event.  Remove keyboard focus from any widgets that had it.
 	setKeyboardFocusWidget(NULL);
@@ -193,6 +202,7 @@ void GLUI::handleMouseDoubleClick(MouseEvent& event)
 		if(event.accepted)
 			return;
 	}
+	temp_widgets.clear();
 }
 
 
@@ -207,6 +217,7 @@ bool GLUI::handleMouseWheelEvent(MouseWheelEvent& event)
 		if(event.accepted)
 			return true;
 	}
+	temp_widgets.clear();
 
 	return false;
 }

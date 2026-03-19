@@ -19,10 +19,10 @@ GLUIGridContainer::CreateArgs::CreateArgs()
 {}
 
 
-GLUIGridContainer::GLUIGridContainer(GLUI& glui, Reference<OpenGLEngine>& opengl_engine_, const CreateArgs& args_)
+GLUIGridContainer::GLUIGridContainer(GLUI& glui_, const CreateArgs& args_)
 {
-	gl_ui = &glui;
-	opengl_engine = opengl_engine_;
+	glui = &glui_;
+	opengl_engine = glui_.opengl_engine.ptr();
 	args = args_;
 	m_z = args_.z;
 
@@ -44,8 +44,11 @@ GLUIGridContainer::GLUIGridContainer(GLUI& glui, Reference<OpenGLEngine>& opengl
 
 GLUIGridContainer::~GLUIGridContainer()
 {
-	if(background_overlay_ob)
-		opengl_engine->removeOverlayObject(background_overlay_ob);
+	for(size_t y=0; y<cell_widgets.getHeight(); ++y)
+	for(size_t x=0; x<cell_widgets.getWidth(); ++x)	
+		checkRemoveAndDeleteWidget(glui, cell_widgets.elem(x, y));
+
+	checkRemoveOverlayObAndSetRefToNull(opengl_engine, background_overlay_ob);
 }
 
 
@@ -54,7 +57,7 @@ void GLUIGridContainer::handleMousePress(MouseEvent& event)
 	if(!background_overlay_ob->draw || !args.background_consumes_events)
 		return;
 
-	const Vec2f coords = gl_ui->UICoordsForOpenGLCoords(event.gl_coords);
+	const Vec2f coords = glui->UICoordsForOpenGLCoords(event.gl_coords);
 	if(rect.inClosedRectangle(coords))
 		event.accepted = true;
 }
@@ -70,7 +73,7 @@ void GLUIGridContainer::handleMouseDoubleClick(MouseEvent& event)
 	if(!background_overlay_ob->draw || !args.background_consumes_events)
 		return;
 
-	const Vec2f coords = gl_ui->UICoordsForOpenGLCoords(event.gl_coords);
+	const Vec2f coords = glui->UICoordsForOpenGLCoords(event.gl_coords);
 	if(rect.inClosedRectangle(coords))
 		event.accepted = true;
 }
@@ -81,7 +84,7 @@ void GLUIGridContainer::doHandleMouseMoved(MouseEvent& event)
 	if(!background_overlay_ob->draw || !args.background_consumes_events)
 		return;
 
-	const Vec2f coords = gl_ui->UICoordsForOpenGLCoords(event.gl_coords);
+	const Vec2f coords = glui->UICoordsForOpenGLCoords(event.gl_coords);
 	if(rect.inClosedRectangle(coords))
 		event.accepted = true;
 }
@@ -92,7 +95,7 @@ void GLUIGridContainer::doHandleMouseWheelEvent(MouseWheelEvent& event)
 	if(!background_overlay_ob->draw || !args.background_consumes_events)
 		return;
 
-	const Vec2f coords = gl_ui->UICoordsForOpenGLCoords(event.gl_coords);
+	const Vec2f coords = glui->UICoordsForOpenGLCoords(event.gl_coords);
 	if(rect.inClosedRectangle(coords))
 		event.accepted = true;
 }
@@ -134,8 +137,8 @@ void GLUIGridContainer::recomputeLayout() // For grid containers - call recursiv
 {
 	// Compute row and column widths.
 
-	const float cell_x_padding = gl_ui->getUIWidthForDevIndepPixelWidth(args.cell_x_padding_px);
-	const float cell_y_padding = gl_ui->getUIWidthForDevIndepPixelWidth(args.cell_y_padding_px);
+	const float cell_x_padding = glui->getUIWidthForDevIndepPixelWidth(args.cell_x_padding_px);
+	const float cell_y_padding = glui->getUIWidthForDevIndepPixelWidth(args.cell_y_padding_px);
 
 	std::vector<float> column_widths(cell_widgets.getWidth());
 
@@ -156,6 +159,7 @@ void GLUIGridContainer::recomputeLayout() // For grid containers - call recursiv
 	}
 
 	std::vector<float> row_heights(cell_widgets.getHeight());
+	float total_height = 0;
 
 	for(size_t y=0; y<cell_widgets.getHeight(); ++y)
 	{
@@ -170,30 +174,33 @@ void GLUIGridContainer::recomputeLayout() // For grid containers - call recursiv
 			}
 		}
 		row_heights[y] = h;
+		total_height += h;
 	}
 		
-	// Now iterate over all cells and set positions
-	float py = 0;
+	// Now iterate over all cells and set positions (from top row to bottom row)
+	float py = total_height;
 	float total_w = 0;
 	for(size_t y=0; y<cell_widgets.getHeight(); ++y)
 	{
 		const float row_height = row_heights[y];
-		
+		const float row_bot_y = py - row_height;
+
 		float px = 0;
 		for(size_t x=0; x<cell_widgets.getWidth(); ++x)	
 		{
 			if((x < (int)col_min_x_px_vals.size()) && col_min_x_px_vals[x] > 0) // If we have a min x pixel val for this column:
-				px = myMax(px, gl_ui->getUIWidthForDevIndepPixelWidth(col_min_x_px_vals[x]));
+				px = myMax(px, glui->getUIWidthForDevIndepPixelWidth(col_min_x_px_vals[x]));
 
 			const float column_width = column_widths[x];
 			GLUIWidget* widget = cell_widgets.elem(x, y).ptr();
 			if(widget)
 			{
 				const float y_space = myMax(0.f, row_height - cell_y_padding * 2 - widget->getDims().y); // Compute space around widget to vertically center
+				const Vec2f widget_bot_left = this->rect.getMin() + Vec2f(px, row_bot_y + y_space*0.5f) + Vec2f(cell_x_padding, cell_y_padding);
 				if(widget->sizing_type_x == SizingType_Expanding) // NOTE: bit of a hack, just checking x sizing type and not y.
-					widget->setPosAndDims(/*botleft=*/this->rect.getMin() + Vec2f(px, py + y_space*0.5f) + Vec2f(cell_x_padding, cell_y_padding), /*dims=*/Vec2f(column_width, row_height) - Vec2f(cell_x_padding * 2, cell_y_padding) * 2);
+					widget->setPosAndDims(/*botleft=*/widget_bot_left, /*dims=*/Vec2f(column_width, row_height) - Vec2f(cell_x_padding * 2, cell_y_padding) * 2);
 				else
-					widget->setPos(/*botleft=*/this->rect.getMin() + Vec2f(px, py + y_space*0.5f) + Vec2f(cell_x_padding, cell_y_padding));
+					widget->setPos(/*botleft=*/widget_bot_left);
 
 				widget->setClipRegion(this->rect);
 			}
@@ -203,17 +210,15 @@ void GLUIGridContainer::recomputeLayout() // For grid containers - call recursiv
 
 		total_w = px;
 
-		py += row_height;
+		py -= row_height;
 	}
-
-	const float total_h = py;
 
 	// Update dimensions
 	Vec2 dims = this->getDims();
 	if(sizing_type_x == GLUIWidget::SizingType_Expanding)
 		dims.x = total_w;
 	if(sizing_type_y == GLUIWidget::SizingType_Expanding)
-		dims.y = total_h;
+		dims.y = total_height;
 
 	const Vec2f botleft = this->getRect().getMin();
 	this->rect = Rect2f(botleft, botleft + dims);
@@ -276,7 +281,7 @@ void GLUIGridContainer::setClipRegion(const Rect2f& clip_rect)
 	}
 
 	if(background_overlay_ob)
-		background_overlay_ob->clip_region = gl_ui->OpenGLRectCoordsForUICoords(clip_rect);
+		background_overlay_ob->clip_region = glui->OpenGLRectCoordsForUICoords(clip_rect);
 }
 
 
@@ -307,38 +312,51 @@ void GLUIGridContainer::setCellWidget(int cell_x, int cell_y, GLUIWidgetRef widg
 		);
 	}
 
-	gl_ui->addWidget(widget); // Add widget to GL UI if not already added.
+	glui->addWidget(widget); // Add widget to GL UI if not already added.
+
+	if(cell_widgets.elem(cell_x, cell_y))
+		cell_widgets.elem(cell_x, cell_y)->setParent(nullptr);
 
 	cell_widgets.elem(cell_x, cell_y) = widget;
+
+	widget->setParent(this);
 
 	widget->setZ(this->getZ() - 0.01f); // Position in front of the container.
 }
 
 
-void GLUIGridContainer::clear()
+void GLUIGridContainer::addWidgetOnNewRow(GLUIWidgetRef widget)
 {
-	cell_widgets.resize(0, 0);
+	setCellWidget(0, (int)cell_widgets.getHeight(), widget);
 }
 
 
-void GLUIGridContainer::removeAllContainedWidgetsFromGLUIAndClear()
+void GLUIGridContainer::clear()
 {
 	for(size_t y=0; y<cell_widgets.getHeight(); ++y)
 	for(size_t x=0; x<cell_widgets.getWidth(); ++x)	
 	{
-		if(cell_widgets.elem(x, y))
-			cell_widgets.elem(x, y)->removeAllContainedWidgetsFromGLUIAndClear();
-
-		checkRemoveAndDeleteWidget(gl_ui, cell_widgets.elem(x, y));
+		GLUIWidget* widget = cell_widgets.elem(x, y).ptr();
+		if(widget)
+			widget->setParent(nullptr);
 	}
 
 	cell_widgets.resize(0, 0);
 }
 
 
+void GLUIGridContainer::containedWidgetChangedSize()
+{
+	if(m_parent)
+		m_parent->containedWidgetChangedSize();
+	else
+		recomputeLayout();
+}
+
+
 //float GLUIGridContainer::getCellPaddding() const
 //{
-//	return gl_ui->getUIWidthForDevIndepPixelWidth(args.cell_padding_px);
+//	return glui->getUIWidthForDevIndepPixelWidth(args.cell_padding_px);
 //}
 
 

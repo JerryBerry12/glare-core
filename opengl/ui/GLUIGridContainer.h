@@ -26,6 +26,7 @@ class TextInputEvent;
 GLUIGridContainer
 -----------------
 A grid of widgets.
+(0, 0) is top left widget.
 =====================================================================*/
 class GLUIGridContainer final : public GLUIWidget
 {
@@ -44,7 +45,7 @@ public:
 		bool background_consumes_events; // Should the background behind the grid consume click events etc.?  Defaults to false.
 	};
 
-	GLUIGridContainer(GLUI& glui, Reference<OpenGLEngine>& opengl_engine, const CreateArgs& args);
+	GLUIGridContainer(GLUI& glui, const CreateArgs& args);
 	virtual ~GLUIGridContainer();
 
 	virtual void handleMousePress(MouseEvent& event) override;
@@ -74,9 +75,11 @@ public:
 
 	void setCellWidget(int cell_x, int cell_y, GLUIWidgetRef widget);
 
+	void addWidgetOnNewRow(GLUIWidgetRef widget); // Adds new row at bottom of grid.
+
 	void clear(); // Remove all widgets from grid, resize cell_widgets to zero.
 
-	void removeAllContainedWidgetsFromGLUIAndClear() override;
+	virtual void containedWidgetChangedSize() override; // For containers - a widget in the container has changed size (e.g. group box collapsed or expanded), so a relayout is probably needed.
 
 	//float getCellPaddding() const; // in UI coords
 
@@ -89,13 +92,9 @@ private:
 
 	void updateBackgroundOverlayTransform();
 	
-	GLUI* gl_ui;
-	Reference<OpenGLEngine> opengl_engine;
-
 	CreateArgs args;
-
 public:
-	Array2D<GLUIWidgetRef> cell_widgets; // (0, 0) is the bottom left cell.
+	Array2D<GLUIWidgetRef> cell_widgets;
 private:
 	OverlayObjectRef background_overlay_ob;
 

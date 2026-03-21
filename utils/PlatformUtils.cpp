@@ -47,6 +47,7 @@ Copyright Glare Technologies Limited 2021 -
 #include "../utils/FileUtils.h"
 #include <cstdlib>
 #include <algorithm>
+#include <pthread.h>
 
 #if defined(__APPLE__)
 	#include <CoreServices/CoreServices.h>

@@ -11,7 +11,7 @@ Copyright Glare Technologies Limited 2026 -
 
 GLUIWindow::CreateArgs::CreateArgs()
 :	title_text_colour(Colour3f(0.9f)),
-	background_colour(Colour3f(0.7f)),
+	background_colour(Colour3f(0.2f)),
 	background_alpha(1.f),
 	z(0.f),
 	padding_px(10),
@@ -44,7 +44,7 @@ GLUIWindow::GLUIWindow(GLUI& glui_, const CreateArgs& args_)
 		text_view_args.background_alpha = 0;
 		text_view_args.text_colour = args.title_text_colour;
 		text_view_args.z = m_z - 0.01f;
-		text_view_args.font_size_px = 20;
+		text_view_args.font_size_px = (int)(GLUI::getDefaultFontSizePx() * 1.5f);
 
 		title_text = new GLUITextView(*glui, args.title, Vec2f(0), text_view_args);
 
@@ -92,7 +92,7 @@ void GLUIWindow::setBodyWidget(const GLUIWidgetRef body_widget_)
 
 	glui->addWidget(body_widget); // Add body_widget to GL UI if not already added.
 
-	updateWidgetTransforms();
+	recomputeLayout();
 }
 
 
@@ -168,12 +168,12 @@ void GLUIWindow::setVisible(bool visible)
 }
 
 
-void GLUIWindow::updateGLTransform()
+void GLUIWindow::viewportResized()
 {
 	if(body_widget)
-		body_widget->updateGLTransform();
+		body_widget->viewportResized();
 
-	updateWidgetTransforms();
+	recomputeLayout();
 }
 
 
@@ -204,14 +204,6 @@ void GLUIWindow::setPos(const Vec2f& botleft)
 {
 	const Vec2f dims = getDims();
 	this->rect = Rect2f(botleft, botleft + dims);
-
-	updateWidgetTransforms();
-}
-
-
-void GLUIWindow::setPosAndDims(const Vec2f& botleft, const Vec2f& dims)
-{
-	rect = Rect2f(botleft, botleft + dims);
 
 	updateWidgetTransforms();
 }
@@ -256,12 +248,12 @@ void GLUIWindow::updateWidgetTransforms()
 
 	if(body_widget)
 	{
-		const Vec2f body_botleft = Vec2f(this->getRect().getMin().x + padding, this->getRect().getMax().y - title_bar_h - body_widget->getDims().y);
+		const Vec2f body_botleft = this->getRect().getMin() + Vec2f(padding);
 		body_widget->setPos(body_botleft);
 
-		const Vec2f clip_botleft = this->getRect().getMin() + Vec2f(padding);
-		const Vec2f clip_topright = max(clip_botleft, this->getRect().getMax() - Vec2f(padding, title_bar_h));
-		body_widget->setClipRegion(Rect2f(clip_botleft, clip_topright));
+	//TEMP	const Vec2f clip_botleft = this->getRect().getMin() + Vec2f(padding);
+	//TEMP	const Vec2f clip_topright = max(clip_botleft, this->getRect().getMax() - Vec2f(padding, title_bar_h));
+	//TEMP	body_widget->setClipRegion(Rect2f(clip_botleft, clip_topright));
 	}
 
 	if(title_text)

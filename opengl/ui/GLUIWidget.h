@@ -52,21 +52,29 @@ public:
 	virtual bool isVisible() = 0;
 	virtual void setVisible(bool visible) = 0;
 
+	// Return the natural or minimum dimensions of the widget.
+	// Default implementation:
+	// For fixed size widgets, returns the fixed size.
+	// For expanding widgets, returns zero.
+	virtual Vec2f getMinDims() const;
+
 	virtual void setPos(const Vec2f& botleft) = 0;
-	virtual void setPosAndDims(const Vec2f& botleft, const Vec2f& dims) = 0;
+
+	virtual void setAvailableRegionDims(const Vec2f& /*available_dims*/) {} // Expanding widgets can resize to fill any of the available space.
 
 	virtual void setClipRegion(const Rect2f& clip_rect) = 0; // clip_rect is in UI coords
 
-	// Called when e.g. the viewport changes size
-	virtual void updateGLTransform();
+	virtual void viewportResized(); // Called when e.g. the viewport changes size
 
 	virtual void recomputeLayout() {} // For containers - call recursively on contained widgets and then place each contained widget at final location.
 
 	virtual void think(GLUI& /*glui*/) {}
 
-	virtual bool acceptsTextInput() { return false; }
+	virtual bool acceptsTextInput() { return false; } // If true, the mouse cursor will change to an I shape when the cursor is over the widget.
 
 	virtual void containedWidgetChangedSize() {} // For containers - a widget in the container has changed size (e.g. group box collapsed or expanded), so a relayout is probably needed.
+
+	virtual std::string className() const { return "unknown"; }
 
 	inline Rect2f getRect() const { return rect; }
 	inline Vec2f getDims() const { return rect.getWidths(); }
@@ -74,19 +82,21 @@ public:
 	
 	virtual void setZ(float new_z) { m_z = new_z; } // Subclasses should override this if they need to set z explicitly on anything.
 
-	void setFixedWidthPx (float x_px, GLUI& gl_ui);
-	void setFixedHeightPx(float y_px, GLUI& gl_ui);
-	void setFixedDimsPx(const Vec2f& dims_px, GLUI& gl_ui);
+	void setFixedWidthPx (float x_px);
+	void setFixedHeightPx(float y_px);
+	void setFixedDimsPx(const Vec2f& dims_px);
 	void setFixedDimsUICoords(const Vec2f& dims_px) { sizing_type_x = SizingType_FixedSizeUICoords; sizing_type_y = SizingType_FixedSizeUICoords; fixed_size = dims_px; }
 
 	// Returns old_dims or recomputes new dims if sizing type is SizingType_FixedSizeUICoords or SizingType_FixedSizePx
-	Vec2f computeDims(const Vec2f& old_dims, GLUI& gl_ui) const;
+	Vec2f computeDims(const Vec2f& old_dims) const;
 
 	void setParent(GLUIWidget* parent_) { m_parent = parent_; }
 	GLUIWidget* getParent() const { return m_parent; }
 
 	void setGLUI(GLUI* new_glui) { glui = new_glui; } // Set on unremoved widgets when gl_ui is about to be destroyed, so that glui is not a dangling pointer to gl_ui.
 	void setOpenGLEngine(OpenGLEngine* new_opengl_engine) { opengl_engine = new_opengl_engine; } // Set on unremoved widgets when gl_ui is about to be destroyed, so we don't have a dangling pointer to opengl_engine.
+
+	void setTooltip(const std::string& new_tooltip) { tooltip = new_tooltip; }
 
 	std::string client_data;
 

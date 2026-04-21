@@ -19,6 +19,7 @@ Copyright Glare Technologies Limited 2021 -
 
 class GLUIMouseWheelEvent;
 class GLUICallbacks;
+class GLUITextView;
 namespace glare { class StackAllocator; }
 
 
@@ -73,7 +74,9 @@ public:
 	void addWidget(const GLUIWidgetRef& widget) { widgets.insert(widget); }
 	void removeWidget(const GLUIWidgetRef& widget) { widgets.erase(widget); }
 
+	void removeAllWidgets();
 
+	Vec2f viewportTopRight() { return Vec2f(1.f, getViewportMinMaxY()); } // Return viewport top right in UI coords.
 	float getViewportMinMaxY();
 	float getYScale();
 
@@ -102,6 +105,10 @@ public:
 	// Drawable pixels per 'device-independent' pixels
 	void setCurrentDevicePixelRatio(float new_device_pixel_ratio);
 	float getDevicePixelRatio() const { return device_pixel_ratio; }
+
+	void setDebugOverlayEnabled(bool enabled);
+
+	static int getDefaultFontSizePx() { return default_font_size_px; }
 
 
 	Reference<OpenGLEngine> opengl_engine;
@@ -134,6 +141,10 @@ private:
 	Vec2f last_mouse_ui_coords;
 
 	std::vector<GLUIWidgetRef> temp_widgets;
+
+	Reference<GLUITextView> debug_overlay;
+
+	static int default_font_size_px;
 };
 
 

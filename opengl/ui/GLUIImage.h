@@ -38,17 +38,19 @@ public:
 	void setTransform(const Vec2f& botleft, const Vec2f& dims, float rotation, float z = -0.9f);
 
 	virtual void setPos(const Vec2f& botleft) override;
-	virtual void setPosAndDims(const Vec2f& botleft, const Vec2f& dims) override;
+	void setPosAndDims(const Vec2f& botleft, const Vec2f& dims);
 
 	virtual void setClipRegion(const Rect2f& clip_rect) override;
 
-	virtual void updateGLTransform() override;
+	virtual void viewportResized() override;
 
 	virtual void setVisible(bool visible) override;
 	virtual bool isVisible() override;
 
 	virtual void doHandleMouseMoved(MouseEvent& event) override;
 	virtual void doHandleMouseWheelEvent(MouseWheelEvent& event) override;
+
+	virtual std::string className() const override { return "GLUIImage"; }
 
 	OverlayObjectRef overlay_ob;
 

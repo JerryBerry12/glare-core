@@ -268,7 +268,7 @@ void GLUISlider::updateOverlayTransforms()
 }
 
 
-void GLUISlider::updateGLTransform()
+void GLUISlider::viewportResized()
 {
 	Vec2f dims = this->getDims();
 
@@ -289,14 +289,6 @@ void GLUISlider::setPos(const Vec2f& botleft)
 {
 	const Vec2f dims = getDims();
 	this->rect = Rect2f(botleft, botleft + dims);
-
-	updateOverlayTransforms();
-}
-
-
-void GLUISlider::setPosAndDims(const Vec2f& botleft, const Vec2f& new_dims)
-{
-	rect = Rect2f(botleft, botleft + new_dims);
 
 	updateOverlayTransforms();
 }

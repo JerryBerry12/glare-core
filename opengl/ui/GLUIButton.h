@@ -60,12 +60,12 @@ public:
 	virtual void handleMouseRelease(MouseEvent& event) override;
 	virtual void doHandleMouseMoved(MouseEvent& event) override;
 
-	virtual void updateGLTransform() override;
+	virtual void viewportResized() override;
 
 	virtual void setPos(const Vec2f& botleft) override;
 
 	void setDims(const Vec2f& dims);
-	virtual void setPosAndDims(const Vec2f& botleft, const Vec2f& dims) override;
+	void setPosAndDims(const Vec2f& botleft, const Vec2f& dims);
 
 	virtual void setClipRegion(const Rect2f& clip_rect) override;
 
@@ -73,6 +73,8 @@ public:
 
 	virtual void setVisible(bool visible) override;
 	virtual bool isVisible() override;
+
+	virtual std::string className() const override { return "GLUIButton"; }
 
 	GLUICallbackHandler* handler;
 

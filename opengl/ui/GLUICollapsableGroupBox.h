@@ -89,15 +89,15 @@ public:
 	virtual bool isVisible() override;
 	virtual void setVisible(bool visible) override;
 
-	// Called when e.g. the viewport changes size
-	virtual void updateGLTransform() override;
+	virtual void viewportResized() override;
 
 	virtual void recomputeLayout() override; // For containers - call recursively on contained widgets and then place each contained widget at final location.
 
 	virtual bool acceptsTextInput() override { return false; }
 
+	virtual Vec2f getMinDims() const override; // Return the natural or minimum dimensions of the widget.
+
 	virtual void setPos(const Vec2f& botleft) override;
-	void setPosAndDims(const Vec2f& botleft, const Vec2f& dims) override;
 	void setClipRegion(const Rect2f& rect) override;
 
 	virtual void setZ(float new_z) override;
@@ -105,6 +105,8 @@ public:
 	virtual void containedWidgetChangedSize() override; // For containers - a widget in the container has changed size (e.g. group box collapsed or expanded), so a relayout is probably needed.
 
 	virtual void eventOccurred(GLUICallbackEvent& /*event*/) override; // From GLUICallbackHandler
+
+	virtual std::string className() const override { return "GLUICollapsableGroupBox"; }
 
 	GLUICallbackHandler* handler; // For close event
 

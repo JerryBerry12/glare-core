@@ -39,6 +39,8 @@ public:
 		Colour3f pressed_colour;
 
 		bool checked; // Initially checked?  False by default.
+
+		bool enabled; // Initially enabled? True by default
 	};
 
 	GLUICheckBox(GLUI& glui, const std::string& tick_texture_path, const CreateArgs& args);
@@ -49,20 +51,25 @@ public:
 	virtual void handleMouseRelease(MouseEvent& event) override;
 	virtual void doHandleMouseMoved(MouseEvent& event) override;
 
-	virtual void updateGLTransform() override;
+	virtual void viewportResized() override;
 
 	virtual void setPos(const Vec2f& botleft) override;
-	virtual void setPosAndDims(const Vec2f& botleft, const Vec2f& dims) override;
 
 	virtual void setClipRegion(const Rect2f& clip_rect) override;
 
 	void setChecked(bool checked_);
 	bool isChecked() const { return checked; }
 
+	void setEnabled(bool enabled_);
+	bool isEnabled() const { return enabled; }
+
 	virtual void setVisible(bool visible) override;
 	virtual bool isVisible() override;
 
+	virtual std::string className() const override { return "GLUICheckBox"; }
+
 	GLUICallbackHandler* handler;
+	std::function<void()> on_checked_changed;
 
 	bool checked;
 	bool pressed;
@@ -76,6 +83,8 @@ private:
 	OverlayObjectRef box_overlay_ob;
 
 	CreateArgs args;
+
+	bool enabled;
 };
 
 

@@ -17,7 +17,11 @@ Copyright Glare Technologies Limited 2025 -
 
 GLUITextButton::CreateArgs::CreateArgs()
 {
-	font_size_px = 14;
+	sizing_type_x = GLUIWidget::SizingType::SizingType_FixedSizePx;
+	sizing_type_y = GLUIWidget::SizingType::SizingType_FixedSizePx;
+	fixed_size = Vec2f(100, std::ceil(GLUI::getDefaultFontSizePx() * 2.4f));
+
+	font_size_px = GLUI::getDefaultFontSizePx();
 
 	background_colour           = Colour3f(1.f);
 	toggled_background_colour   = toLinearSRGB(Colour3f(0.7f, 0.8f, 1.f));
@@ -53,9 +57,9 @@ GLUITextButton::GLUITextButton(GLUI& glui_, const std::string& button_text_, con
 	text_view = new GLUITextView(glui_, button_text, botleft, text_args);
 	glui->addWidget(text_view);
 
-	this->rect = text_view->getBackgroundRect();
+	this->rect = text_view->getRect();// getBackgroundRect();
 
-	this->setFixedDimsPx(Vec2f(glui->getDevIndepPixelWidthForUIWidth(rect.getWidths().x), glui->getDevIndepPixelWidthForUIWidth(rect.getWidths().y)), glui_);
+	this->setFixedDimsPx(max(fixed_size, Vec2f(glui->getDevIndepPixelWidthForUIWidth(rect.getWidths().x), glui->getDevIndepPixelWidthForUIWidth(rect.getWidths().y))));
 }
 
 
@@ -78,6 +82,15 @@ void GLUITextButton::handleMousePress(MouseEvent& event)
 			GLUICallbackEvent callback_event;
 			callback_event.widget = this;
 			handler->eventOccurred(callback_event);
+			if(callback_event.accepted)
+				event.accepted = true;
+		}
+
+		if(handler_func)
+		{
+			GLUICallbackEvent callback_event;
+			callback_event.widget = this;
+			handler_func(callback_event);
 			if(callback_event.accepted)
 				event.accepted = true;
 		}
@@ -120,11 +133,11 @@ void GLUITextButton::doHandleMouseMoved(MouseEvent& mouse_event)
 }
 
 
-void GLUITextButton::updateGLTransform()
+void GLUITextButton::viewportResized()
 {
-	text_view->updateGLTransform();
+	text_view->viewportResized();
 
-	this->rect = text_view->getBackgroundRect();
+	this->rect = text_view->getRect(); // getBackgroundRect();
 }
 
 
@@ -146,16 +159,36 @@ void GLUITextButton::rebuild()
 	text_view->setVisible(old_visible);
 	glui->addWidget(text_view);
 
-	this->rect = text_view->getBackgroundRect();
+	this->rect = text_view->getRect(); // getBackgroundRect();
+}
+
+
+Vec2f GLUITextButton::getMinDims() const
+{
+	return text_view->getMinDims();
 }
 
 
 void GLUITextButton::setPos(const Vec2f& botleft)
 {
 	//Vec2f extra = text_vuiewgetRect
-	text_view->setPos(botleft + Vec2f(text_view->getPaddingWidth()));
+	text_view->setPos(botleft/* + Vec2f(text_view->getPaddingWidth())*/);
 
-	rect = text_view->getBackgroundRect();
+	rect = text_view->getRect(); // getBackgroundRect();
+}
+
+
+void GLUITextButton::setAvailableRegionDims(const Vec2f& available_dims)
+{
+	Vec2f dims = this->getDims();
+
+	if(sizing_type_x == SizingType_Expanding)
+		dims.x = myMax(dims.x, available_dims.x);
+	if(sizing_type_y == SizingType_Expanding)
+		dims.y = myMax(dims.y, available_dims.y);
+
+	rect = Rect2f::fromMinAndSpan(this->getRect().getMin(), dims);
+	text_view->setFixedDimsUICoords(dims);
 }
 
 
@@ -164,12 +197,6 @@ void GLUITextButton::setZ(float new_z)
 	this->m_z = new_z;
 
 	text_view->setZ(new_z);
-}
-
-
-void GLUITextButton::setPosAndDims(const Vec2f& botleft, const Vec2f& dims)
-{
-	setPos(botleft);
 }
 
 

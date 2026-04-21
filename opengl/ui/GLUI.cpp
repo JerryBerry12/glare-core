@@ -7,6 +7,7 @@ Copyright Glare Technologies Limited 2021 -
 
 
 #include "GLUIInertWidget.h"
+#include "GLUITextView.h"
 #include <graphics/SRGBUtils.h>
 #include "../OpenGLMeshRenderData.h"
 #include "../utils/FileUtils.h"
@@ -17,6 +18,9 @@ Copyright Glare Technologies Limited 2021 -
 
 static const float TOOLTIP_Z = -0.999f; // -1 is near clip plane
 static const int tooltip_font_size_px = 12;
+
+
+int GLUI::default_font_size_px = 12;
 
 
 GLUI::GLUI()
@@ -58,6 +62,8 @@ void GLUI::create(Reference<OpenGLEngine>& opengl_engine_, float device_pixel_ra
 
 void GLUI::destroy()
 {
+	checkRemoveAndDeleteWidget(this, debug_overlay);
+
 	if(!widgets.empty())
 	{
 		conPrint("WARNING: " + toString(widgets.size()) + " widgets still in GLUI upon destruction.");
@@ -71,9 +77,7 @@ void GLUI::destroy()
 		widgets.clear();
 	}
 
-	if(tooltip_overlay_ob.nonNull())
-		opengl_engine->removeOverlayObject(tooltip_overlay_ob);
-	tooltip_overlay_ob = NULL;
+	checkRemoveOverlayObAndSetRefToNull(opengl_engine.ptr(), tooltip_overlay_ob);
 
 	opengl_engine = NULL;
 }
@@ -296,6 +300,31 @@ bool GLUI::handleMouseMoved(MouseEvent& mouse_event)
 		mouse_over_text_input_widget = new_mouse_over_text_input_widget;
 	}
 
+
+	// Update debug overlay with details of the closest widget under the mouse pointer.
+	if(debug_overlay)
+	{
+		getSortedWidgetsAtEventPos(widgets, coords, temp_widgets);
+
+		if(!temp_widgets.empty())
+		{
+			GLUIWidget* widget = temp_widgets[0].ptr();
+
+			std::string str = widget->className() + " ('" + widget->debug_name + "')\n";
+			str += "min: " + widget->getRect().getMin().toStringMaxNDecimalPlaces(3) + "\n";
+			str += "dims: " + widget->getDims().toStringMaxNDecimalPlaces(3) + "\n";
+			debug_overlay->setText(str);
+		}
+		else
+		{
+			debug_overlay->setText("");
+		}
+		debug_overlay->setPos(this->viewportTopRight() - debug_overlay->getDims()); // Position at top right of viewport
+
+
+		temp_widgets.clear();
+	}
+
 	return false;
 }
 
@@ -347,10 +376,15 @@ void GLUI::viewportResized(int /*w*/, int /*h*/)
 	for(auto it = widgets.begin(); it != widgets.end(); ++it)
 	{
 		GLUIWidget* widget = it->ptr();
-		widget->updateGLTransform();
+		widget->viewportResized();
 	}
 }
 
+
+void GLUI::removeAllWidgets()
+{
+	widgets.clear();
+}
 
 float GLUI::getViewportMinMaxY()
 {
@@ -465,6 +499,21 @@ void GLUI::setCurrentDevicePixelRatio(float new_device_pixel_ratio)
 	for(auto it = widgets.begin(); it != widgets.end(); ++it)
 	{
 		GLUIWidget* widget = it->ptr();
-		widget->updateGLTransform();
+		widget->viewportResized();
+	}
+}
+
+
+void GLUI::setDebugOverlayEnabled(bool enabled)
+{
+	if(enabled)
+	{
+		GLUITextView::CreateArgs args;
+		debug_overlay = new GLUITextView(*this, "debug overlay", Vec2f(0.f), args);
+		this->addWidget(debug_overlay);
+	}
+	else
+	{
+		checkRemoveAndDeleteWidget(this, debug_overlay);
 	}
 }

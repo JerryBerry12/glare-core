@@ -5166,6 +5166,78 @@ bool OpenGLEngine::getWindowCoordsForWSPos(const Vec4f& pos_ws, Vec2f& coords_ou
 }
 
 
+Vec4f OpenGLEngine::pixelToRayDirWS(const Vec2f& px) const
+{
+	const Vec4f cam_forwards = current_scene->cam_to_world.getColumn(1); // = cam_to_world * Vec4f(0,1,0,0);
+	const Vec4f cam_right    = current_scene->cam_to_world.getColumn(0); // = cam_to_world * Vec4f(1,0,0,0);
+	const Vec4f cam_up       = current_scene->cam_to_world.getColumn(2); // = cam_to_world * Vec4f(0,0,1,0);
+
+	const int viewport_w = current_scene->viewport_w;
+	const int viewport_h = current_scene->viewport_h;
+	const float sensor_w = current_scene->use_sensor_width;
+	const float sensor_h = current_scene->use_sensor_height;
+	const float lens_sensor_dist = current_scene->lens_sensor_dist;
+
+	const float s_x = sensor_w * (px.x - (float)viewport_w * 0.5f) / (float)viewport_w;
+	const float s_y = sensor_h * (px.y - (float)viewport_h * 0.5f) / (float)viewport_h;
+
+	const float r_x = s_x / lens_sensor_dist;
+	const float r_y = s_y / lens_sensor_dist;
+
+	return normalise(cam_forwards + cam_right * r_x - cam_up * r_y);
+}
+
+
+/*
+Project a world-space point to pixel coordinates.
+Returns false if the point is behind the camera.
+
+s_x is distance left on sensor:
+s_x = sensor_width * (pixel_x - gl_w/2) / gl_w
+
+Let r_x = (cam_to_point, forw) / (cam_to_point, right)
+From similar triangles,
+r_x = s_x / lens_sensor_dist, where s_x is distance left on sensor.
+
+so
+r_x = sensor_width * (pixel_x - gl_w/2) / (gl_w * lens_sensor_dist)
+
+(gl_w * lens_sensor_dist) * r_x = sensor_width * (pixel_x - gl_w/2)
+gl_w * lens_sensor_dist * r_x = sensor_width * pixel_x - sensor_width * gl_w/2
+gl_w * lens_sensor_dist * r_x + sensor_width * gl_w/2 = sensor_width * pixel_x
+
+pixel_x = (gl_w * lens_sensor_dist * r_x + sensor_width * gl_w/2) / sensor_width
+pixel_x = gl_w * (lens_sensor_dist * r_x + sensor_width / 2) / sensor_width;
+pixel_x = gl_w * (lens_sensor_dist * r_x / sensor_width + 1/2);
+pixel_x = gl_w * (lens_sensor_dist / sensor_width * r_x + 1/2);
+*/
+bool OpenGLEngine::worldSpacePosToPixel(const Vec4f& ws_pos, Vec2f& px_out)
+{
+	const Vec4f cam_pos      = current_scene->cam_to_world.getColumn(3);
+	const Vec4f cam_forwards = current_scene->cam_to_world.getColumn(1); // = cam_to_world * Vec4f(0,1,0,0);
+	const Vec4f cam_right    = current_scene->cam_to_world.getColumn(0); // = cam_to_world * Vec4f(1,0,0,0);
+	const Vec4f cam_up       = current_scene->cam_to_world.getColumn(2); // = cam_to_world * Vec4f(0,0,1,0);
+
+	const Vec4f cam_to_point = ws_pos - cam_pos;
+	const float fwd_dist = dot(cam_to_point, cam_forwards);
+	if(fwd_dist < 0.001f)
+		return false;
+
+	const float r_x =  dot(cam_to_point, cam_right) / fwd_dist;
+	const float r_y = -dot(cam_to_point, cam_up)    / fwd_dist;
+
+	const int viewport_w         = current_scene->viewport_w;
+	const int viewport_h         = current_scene->viewport_h;
+	const float sensor_w         = current_scene->use_sensor_width;
+	const float sensor_h         = current_scene->use_sensor_height;
+	const float lens_sensor_dist = current_scene->lens_sensor_dist;
+
+	px_out.x = ((float)viewport_w * lens_sensor_dist * r_x + sensor_w * (float)viewport_w * 0.5f) / sensor_w;
+	px_out.y = ((float)viewport_h * lens_sensor_dist * r_y + sensor_h * (float)viewport_h * 0.5f) / sensor_h;
+	return true;
+}
+
+
 // If prog is not the current bound/used program, then bind it, and update current_bound_prog.
 // Returns true if prog was not the current bound program, and hence the currently bound program changed.
 bool OpenGLEngine::checkUseProgram(const OpenGLProgram* prog)
@@ -10337,7 +10409,7 @@ void OpenGLEngine::computeSSAO(const Matrix4f& /*proj_matrix*/)
 
 void OpenGLEngine::drawAlwaysVisibleObjects(const Matrix4f& view_matrix, const Matrix4f& proj_matrix)
 {
-	// These are objects like the move/rotate arrows, that should be visible even when behind other objects.
+	// These are objects like the move/rotate gizmo arrows, that should be visible even when behind other objects.
 	// The drawing strategy for these will be:
 	// Draw once without depth testing, and without depth writes, but with blending, so they are always partially visible.
 	// Then draw again with depth testing, so they look proper when not occluded by another object.
@@ -10373,7 +10445,7 @@ void OpenGLEngine::drawAlwaysVisibleObjects(const Matrix4f& view_matrix, const M
 
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA);
-		glBlendColor(1, 1, 1, 0.5f);
+		glBlendColor(1, 1, 1, 0.75f);
 		
 
 		glEnable(GL_CULL_FACE); // We will cull backfaces, since we are not doing depth testing, to make it looks slightly less weird.

@@ -17,6 +17,23 @@ Copyright Glare Technologies Limited 2024 -
 #include "../../utils/UTF8Utils.h"
 
 
+GLUILineEdit::CreateArgs::CreateArgs()
+:	sizing_type_x(GLUIWidget::SizingType_FixedSizePx),
+	sizing_type_y(GLUIWidget::SizingType_FixedSizePx),
+	fixed_size(120.f, std::ceil(GLUI::getDefaultFontSizePx() * 2.4f)),
+	background_colour(0.07f),
+	mouseover_background_colour(0.07f),
+	background_alpha(1),
+	text_colour(1.f),
+	text_alpha(1.f),
+	padding_px(10),
+	font_size_px(GLUI::getDefaultFontSizePx()),
+	//width(0.2f),
+	rounded_corner_radius_px(8),
+	z(0.f)
+{}
+
+
 GLUILineEdit::GLUILineEdit(GLUI& glui_, const Vec2f& botleft_, const CreateArgs& args_)
 {
 	glui = &glui_;
@@ -25,6 +42,10 @@ GLUILineEdit::GLUILineEdit(GLUI& glui_, const Vec2f& botleft_, const CreateArgs&
 	this->m_z = args_.z;
 	opengl_engine = glui_.opengl_engine.ptr();
 	tooltip = args.tooltip;
+
+	sizing_type_x = args.sizing_type_x;
+	sizing_type_y = args.sizing_type_y;
+	fixed_size = args.fixed_size;
 
 	botleft = botleft_;
 
@@ -101,10 +122,12 @@ void GLUILineEdit::think(GLUI& /*glui_*/)
 }
 
 
-void GLUILineEdit::setText(GLUI& /*glui_*/, const std::string& new_text)
+void GLUILineEdit::setText(const std::string& new_text)
 {
 	if(new_text != text)
 	{
+		text = new_text;
+		cursor_pos = myMin(cursor_pos, (int)UTF8Utils::numCodePointsInString(text));
 		recreateTextWidget();
 		updateOverlayObTransforms();
 	}
@@ -117,16 +140,16 @@ const std::string& GLUILineEdit::getText() const
 }
 
 
-void GLUILineEdit::setWidth(float width)
-{
-	if(width != args.width)
-	{
-		args.width = width;
-
-		this->last_viewport_dims = Vec2i(0); // Force recreate rounded-corner rect
-		updateOverlayObTransforms();
-	}
-}
+//void GLUILineEdit::setWidth(float width)
+//{
+//	if(width != args.width)
+//	{
+//		args.width = width;
+//
+//		this->last_viewport_dims = Vec2i(0); // Force recreate rounded-corner rect
+//		updateOverlayObTransforms();
+//	}
+//}
 
 
 void GLUILineEdit::clear()
@@ -144,7 +167,8 @@ void GLUILineEdit::updateOverlayObTransforms()
 {
 	if(background_overlay_ob.nonNull())
 	{
-		const float background_w = args.width;
+		assert(sizing_type_x == GLUIWidget::SizingType_FixedSizePx); // TEMP: assert fixed size in x for now
+		const float background_w = glui->getUIWidthForDevIndepPixelWidth(fixed_size.x);
 		const float background_h = glui->getUIWidthForDevIndepPixelWidth(this->height_px);
 
 		if(this->last_viewport_dims != opengl_engine->getViewportDims())
@@ -162,7 +186,7 @@ void GLUILineEdit::updateOverlayObTransforms()
 		const float z = m_z + 0.001f;
 		background_overlay_ob->ob_to_world_matrix = Matrix4f::translationMatrix(botleft.x, botleft.y * y_scale, z) * Matrix4f::scaleMatrix(1, y_scale, 1);
 
-		rect = Rect2f(botleft, botleft + Vec2f(args.width, background_h));
+		rect = Rect2f(botleft, botleft + Vec2f(background_w, background_h));
 	}
 
 	
@@ -239,7 +263,8 @@ void GLUILineEdit::recreateTextWidget()
 	glui_text = new GLUIText(*glui, text, /*botleft=*/Vec2f(0.f), text_create_args);
 
 	// Set clip region so text doesn't draw outside of line edit.
-	glui_text->setClipRegion(Rect2f(botleft, botleft + Vec2f(args.width, glui->getUIWidthForDevIndepPixelWidth(this->height_px))));
+	assert(sizing_type_x == GLUIWidget::SizingType_FixedSizePx); // TEMP: assert fixed size in x for now
+	glui_text->setClipRegion(Rect2f(botleft, botleft + Vec2f(glui->getUIWidthForDevIndepPixelWidth(fixed_size.x), glui->getUIWidthForDevIndepPixelWidth(this->height_px))));
 
 	updateTextTransform();
 }
@@ -255,14 +280,18 @@ void GLUILineEdit::updateTextTransform()
 		Vec2f rel_cursor_pos = glui_text->getRelativeCharPos(*glui, cursor_pos);
 
 		// Shift text left if cursor position would be to right of line edit.
-		const float max_rel_cursor_x = args.width - margin_x * 2; // glui->getUIWidthForDevIndepPixelWidth(15);
+		assert(sizing_type_x == GLUIWidget::SizingType_FixedSizePx); // TEMP: assert fixed size in x for now
+
+		const float max_rel_cursor_x = glui->getUIWidthForDevIndepPixelWidth(fixed_size.x) - margin_x * 2; // glui->getUIWidthForDevIndepPixelWidth(15);
 		const float left_shift_amount = myMax(0.f, rel_cursor_pos.x - max_rel_cursor_x);
 		const Vec2f text_botleft = botleft + Vec2f(margin_x, margin_y) - Vec2f(left_shift_amount, 0);
 
 		glui_text->setPos(text_botleft);
+		glui_text->setZ(m_z - 0.01f);
+		glui_text->updateGLTransform();
 
 		// Set clip region so text doesn't draw outside of line edit.
-		glui_text->setClipRegion(Rect2f(botleft, botleft + Vec2f(args.width, glui->getUIWidthForDevIndepPixelWidth(this->height_px))));
+		glui_text->setClipRegion(Rect2f(botleft, botleft + Vec2f(glui->getUIWidthForDevIndepPixelWidth(fixed_size.x), glui->getUIWidthForDevIndepPixelWidth(this->height_px))));
 	}
 }
 
@@ -474,9 +503,12 @@ void GLUILineEdit::doHandleKeyPressedEvent(KeyEvent& key_event)
 	else
 	{
 	}
-	
+
 	recreateTextWidget(); // Re-create glui_text to show new text
 	updateOverlayObTransforms();
+
+	if(on_text_changed)
+		on_text_changed();
 
 	key_event.accepted = true;
 }
@@ -499,6 +531,9 @@ void GLUILineEdit::doHandleTextInputEvent(TextInputEvent& text_input_event)
 	recreateTextWidget(); // Re-create glui_text to show new text
 	updateOverlayObTransforms();
 
+	if(on_text_changed)
+		on_text_changed();
+
 	text_input_event.accepted = true;
 }
 
@@ -508,6 +543,9 @@ void GLUILineEdit::handleLosingKeyboardFocus()
 	// Clear selection
 	this->selection_start = this->selection_end = -1;
 	updateOverlayObTransforms(); // Redraw
+
+	if(on_losing_keyboard_focus)
+		on_losing_keyboard_focus();
 }
 
 
@@ -534,6 +572,9 @@ void GLUILineEdit::handleCutEvent(std::string& clipboard_contents_out)
 
 		recreateTextWidget(); // Re-create glui_text to show new text
 		updateOverlayObTransforms(); // Redraw
+
+		if(on_text_changed)
+			on_text_changed();
 	}
 }
 
@@ -555,7 +596,7 @@ void GLUILineEdit::handleCopyEvent(std::string& clipboard_contents_out)
 }
 
 
-void GLUILineEdit::updateGLTransform()
+void GLUILineEdit::viewportResized()
 {
 	updateTextTransform();
 	updateOverlayObTransforms();
@@ -581,13 +622,22 @@ bool GLUILineEdit::isVisible()
 }
 
 
-//const Vec2f GLUILineEdit::getDims() const
-//{
-//	if(glui_text.nonNull())
-//		return glui_text->getDims();
-//	else
-//		return Vec2f(0.f);
-//}
+Vec2f GLUILineEdit::getMinDims() const
+{
+	Vec2f min_dims = glui->getUIWidthForDevIndepPixelWidths(Vec2f(100.f, 22.f));
+
+	if(sizing_type_x == SizingType::SizingType_FixedSizePx)
+		min_dims.x = glui->getUIWidthForDevIndepPixelWidth(fixed_size.x);
+	else if(sizing_type_x == SizingType::SizingType_FixedSizeUICoords)
+		min_dims.x = fixed_size.x;
+
+	if(sizing_type_y == SizingType::SizingType_FixedSizePx)
+		min_dims.y = glui->getUIWidthForDevIndepPixelWidth(fixed_size.y);
+	else if(sizing_type_y == SizingType::SizingType_FixedSizeUICoords)
+		min_dims.y = fixed_size.y;
+
+	return min_dims;
+}
 
 
 void GLUILineEdit::setPos(const Vec2f& botleft_)
@@ -599,9 +649,19 @@ void GLUILineEdit::setPos(const Vec2f& botleft_)
 }
 
 
-void GLUILineEdit::setPosAndDims(const Vec2f& new_botleft, const Vec2f& dims)
+void GLUILineEdit::setAvailableRegionDims(const Vec2f& available_dims) // Expanding widgets can resize to fill any of the available space.
 {
-	setPos(new_botleft);
+	Vec2f dims = getMinDims();
+
+	if(sizing_type_x == SizingType_Expanding)
+		dims.x = myMax(dims.x, available_dims.x);
+	if(sizing_type_y == SizingType_Expanding)
+		dims.y = myMax(dims.y, available_dims.y);
+
+	rect = Rect2f::fromMinAndSpan(this->getRect().getMin(), dims);
+
+	//updateTextTransform();
+	updateOverlayObTransforms();
 }
 
 
@@ -616,15 +676,11 @@ void GLUILineEdit::setClipRegion(const Rect2f& clip_rect)
 }
 
 
-GLUILineEdit::CreateArgs::CreateArgs():
-	background_colour(0.f),
-	mouseover_background_colour(0.1f),
-	background_alpha(1),
-	text_colour(1.f),
-	text_alpha(1.f),
-	padding_px(10),
-	font_size_px(14),
-	width(0.2f),
-	rounded_corner_radius_px(8),
-	z(0.f)
-{}
+void GLUILineEdit::setZ(float new_z)
+{
+	m_z = new_z;
+	glui_text->setZ(new_z);
+
+	updateTextTransform();
+	updateOverlayObTransforms();
+}

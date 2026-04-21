@@ -28,6 +28,10 @@ public:
 	{
 		CreateArgs();
 
+		GLUIWidget::SizingType sizing_type_x;
+		GLUIWidget::SizingType sizing_type_y;
+		Vec2f fixed_size; // x component used if sizing_type_x == SizingType_FixedSizePx, likewise for y component.
+
 		std::string tooltip;
 		int font_size_px; // default = 14 pixels.
 
@@ -48,15 +52,18 @@ public:
 
 	virtual void handleMousePress(MouseEvent& event) override;
 	virtual void doHandleMouseMoved(MouseEvent& event) override;
-	virtual void updateGLTransform() override; // Called when e.g. the viewport changes size
+	virtual void viewportResized() override;
 
 	void rebuild();
 
+	virtual Vec2f getMinDims() const override; // Return the natural or minimum dimensions of the widget.
+
 	virtual void setPos(const Vec2f& botleft) override;
+
+	virtual void setAvailableRegionDims(const Vec2f& available_dims) override;
 
 	void setZ(float new_z) override;
 
-	virtual void setPosAndDims(const Vec2f& botleft, const Vec2f& dims) override;
 	virtual void setClipRegion(const Rect2f& clip_rect) override;
 
 	bool isToggled() const { return toggled; }
@@ -65,7 +72,10 @@ public:
 	virtual void setVisible(bool visible) override;
 	virtual bool isVisible() override;
 
+	virtual std::string className() const override { return "GLUITextButton"; }
+
 	GLUICallbackHandler* handler;
+	std::function<void(GLUICallbackEvent&)> handler_func;
 private:
 	GLARE_DISABLE_COPY(GLUITextButton);
 

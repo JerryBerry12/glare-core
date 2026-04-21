@@ -91,6 +91,8 @@ ${GLARE_CORE_TRUNK_DIR_ENV}/opengl/OpenGLMemoryObject.cpp
 ${GLARE_CORE_TRUNK_DIR_ENV}/opengl/OpenGLMemoryObject.h
 ${GLARE_CORE_TRUNK_DIR_ENV}/opengl/OpenGLExtensions.cpp
 ${GLARE_CORE_TRUNK_DIR_ENV}/opengl/OpenGLExtensions.h
+${GLARE_CORE_TRUNK_DIR_ENV}/opengl/TransformGizmo.cpp
+${GLARE_CORE_TRUNK_DIR_ENV}/opengl/TransformGizmo.h
 )
 
 
@@ -128,6 +130,10 @@ ${GLARE_CORE_TRUNK_DIR_ENV}/opengl/ui/GLUIWindow.cpp
 ${GLARE_CORE_TRUNK_DIR_ENV}/opengl/ui/GLUIWindow.h
 ${GLARE_CORE_TRUNK_DIR_ENV}/opengl/ui/GLUICollapsableGroupBox.cpp
 ${GLARE_CORE_TRUNK_DIR_ENV}/opengl/ui/GLUICollapsableGroupBox.h
+${GLARE_CORE_TRUNK_DIR_ENV}/opengl/ui/GLUISpinBox.cpp
+${GLARE_CORE_TRUNK_DIR_ENV}/opengl/ui/GLUISpinBox.h
+${GLARE_CORE_TRUNK_DIR_ENV}/opengl/ui/GLUIDropDownList.cpp
+${GLARE_CORE_TRUNK_DIR_ENV}/opengl/ui/GLUIDropDownList.h
 )
 
 

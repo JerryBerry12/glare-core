@@ -58,14 +58,16 @@ public:
 	virtual bool isVisible() override;
 	virtual void setVisible(bool visible) override;
 
-	// Called when e.g. the viewport changes size
-	virtual void updateGLTransform() override;
+	virtual void viewportResized() override;
 
 	virtual bool acceptsTextInput() override { return false; }
 
 	virtual void setPos(const Vec2f& botleft) override;
-	virtual void setPosAndDims(const Vec2f& botleft, const Vec2f& dims) override;
 	virtual void setClipRegion(const Rect2f& clip_rect) override;
+
+	virtual std::string className() const override { return "GLUIInertWidget"; }
+
+	void setPosAndDims(const Vec2f& botleft, const Vec2f& dims);
 
 private:
 	GLARE_DISABLE_COPY(GLUIInertWidget);
